@@ -35,12 +35,10 @@ ESX.RegisterServerCallback("esx_drugsProgression:getAlreadyLearned", function(so
 end)
 
 ESX.RegisterServerCallback("esx_drugsProgression:playerHasItems", function(source, cb, itemsToCheck)
-    local xPlayer = ESX.GetPlayerFromId(source)
-    -- print(xPlayer.getInventoryItem('weed_formula').count)
     local checkedItems = {}
     if itemsToCheck ~= nil then
         for _, v in pairs(itemsToCheck) do
-            if xPlayer.getInventoryItem(v.item).count > 0 then
+            if ESX.Player.getInventoryItem(v.item).count > 0 then
                 table.insert(checkedItems, {item=v.item, hasItem=true})
             else
                 table.insert(checkedItems, {item=v.item, hasItem=false})
@@ -60,9 +58,8 @@ ESX.RegisterServerCallback("esx_drugsProgression:getDrugsPercentage", function(s
 end)
 
 ESX.RegisterServerCallback("esx_drugsProgression:removeAccountMoney", function(source, cb, amount)
-    local xPlayer = ESX.GetPlayerFromId(source)
-    if tonumber(xPlayer.getMoney()) >= tonumber(amount) then
-        xPlayer.removeMoney(tonumber(amount))
+    if tonumber(ESX.Player.getMoney()) >= tonumber(amount) then
+        ESX.Player.removeMoney(tonumber(amount))
         cb(true)
     else 
         cb(false)
@@ -88,7 +85,6 @@ end)
 
 RegisterServerEvent("esx_drugsProgression:doneStep")
 AddEventHandler("esx_drugsProgression:doneStep", function(drugType, step)
-    local xPlayer = ESX.GetPlayerFromId(source)
     local identifier = GetPlayerIdentifiers(source)[1]
 
     MySQL.scalar('SELECT `info` FROM `esx_drugsProgression` WHERE `identifier` = ?', {identifier}, function(result)
@@ -103,7 +99,6 @@ end)
 
 RegisterServerEvent("esx_drugsProgression:finishSteps")
 AddEventHandler("esx_drugsProgression:finishSteps", function(drugType, step)
-    local xPlayer = ESX.GetPlayerFromId(source)
     local identifier = GetPlayerIdentifiers(source)[1]
 
     MySQL.scalar('SELECT `info` FROM `esx_drugsProgression` WHERE `identifier` = ?', {identifier}, function(result)
@@ -118,6 +113,5 @@ end)
 
 RegisterServerEvent("esx_drugsProgression:removeFormula")
 AddEventHandler("esx_drugsProgression:removeFormula", function(drug_type)
-    local xPlayer = ESX.GetPlayerFromId(source)
-    xPlayer.removeInventoryItem(drug_type..'_formula', 1)
+    ESX.Player.removeInventoryItem(drug_type..'_formula', 1)
 end)

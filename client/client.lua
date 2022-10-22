@@ -15,7 +15,7 @@ end)
 
 -- Indien player ingeladen word
 RegisterNetEvent('esx:playerLoaded')
-AddEventHandler("esx:playerLoaded", function()
+AddEventHandler("esx:playerLoaded", function(xPlayer)
     Citizen.Wait(100)
     ESX.TriggerServerCallback('esx_drugsProgression:getAlreadyLearned', function(identifier, results)
         if results ~= nil then
