@@ -38,11 +38,41 @@ AddEventHandler('onResourceStart', function(resourceName)
     end)
 end)
 
--- Detect keypress
+-- Display text near npc
 Citizen.CreateThread(function()
 	while true do
 		Citizen.Wait(0)
-        -- print(isNearbyNPC, currentNPC, inStep)
+        local isNearby = false
+        local minDistance = 1000 
+        for k, v in pairs(Config.npcs) do
+            local distance = #(GetEntityCoords(PlayerPedId()) - vec3(v.x, v.y, v.z))
+            if(distance < Config.displayDistance) then
+                isNearby = true
+            end
+            if isNearby and not isAlreadyNearNPC then
+                -- Update de current container waar je staat
+                isAlreadyNearNPC = true
+                isNearbyNPC = true
+                currentNPC = v
+            end
+            minDistance = math.min(distance, minDistance)
+        end
+
+        if minDistance > Config.displayDistance then
+            Citizen.Wait(10 * minDistance) -- Timer instellen om resource usage omlaag te brengen
+        end
+
+        if not isNearby and isAlreadyNearNPC then
+            isAlreadyNearNPC = false
+            isNearbyNPC = false
+        end
+	end
+end)
+
+-- Detect keypress near npc
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(0)
 		if isNearbyNPC ~= false and currentNPC ~= nil then
             if inStep == false then
                 local price = Config.drugsPrices[currentNPC.pedInfo]
@@ -174,40 +204,6 @@ function craftFormula(drugType, drugConfig)
         end)
     end, {{item=drugType..'_formula', amount=1}})
 end
-
--- Display text near npc
-Citizen.CreateThread(function()
-	while true do
-		Citizen.Wait(0)
-        local isNearby = false
-        local minDistance = 1000 
-
-        for k, v in pairs(Config.npcs) do
-            local distance = #(GetEntityCoords(PlayerPedId()) - vec3(v.x, v.y, v.z))
-            if(distance < Config.displayDistance) then
-                isNearby = true
-            end
-
-            if isNearby and not isAlreadyNearNPC then
-                -- Update de current container waar je staat
-                isAlreadyNearNPC = true
-                isNearbyNPC = true
-                currentNPC = v
-            end
-
-            minDistance = math.min(distance, minDistance)
-        end
-
-        if minDistance > Config.displayDistance then
-            Citizen.Wait(10 * minDistance)
-        end
-
-        if not isNearby and isAlreadyNearNPC then
-            isAlreadyNearNPC = false
-            isNearbyNPC = false
-        end
-	end
-end)
 
 -- Functie om text linksboven weer te geven
 function showInfobar(msg)
