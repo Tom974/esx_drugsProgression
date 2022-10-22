@@ -1,6 +1,3 @@
--- ESX.TriggerServerCallback('drugs_progression:getDrugsPercentage', function(percentage)
---     print('percentage: ' .. percentage)
--- end) -- Voor later nog misschien nodig
 ESX = nil
 local blip = nil
 local inStep = false
@@ -17,12 +14,15 @@ CreateThread(function()
 end)
 
 -- Indien player ingeladen word
--- RegisterNetEvent('esx:playerLoaded')
--- AddEventHandler("esx:playerLoaded", function(xPlayer)
---     ESX.PlayerData = xPlayer
---     TriggerServerEvent("drugs_progression:insert_if_not_exists")
---     Citizen.Wait(100)
--- end)
+RegisterNetEvent('esx:playerLoaded')
+AddEventHandler("esx:playerLoaded", function()
+    Citizen.Wait(100)
+    ESX.TriggerServerCallback('esx_drugsProgression:getAlreadyLearned', function(identifier, results)
+        if results ~= nil then
+            infoArray = results
+        end
+    end)
+end)
 
 -- Tijdelijk ivm development en restarten van plugin/script
 AddEventHandler('onResourceStart', function(resourceName)
@@ -30,14 +30,10 @@ AddEventHandler('onResourceStart', function(resourceName)
         return -- Als de resource niet gelijk is aan de resource die je hier hebt, doe niks
     end
 
-    print('insert')
     TriggerServerEvent("esx_drugsProgression:insertIfNotExists")
-    print('done')
     ESX.TriggerServerCallback('esx_drugsProgression:getAlreadyLearned', function(identifier, results)
-        print('callback done')
         if results ~= nil then
             infoArray = results
-            print('updated')
         end
     end)
 end)
@@ -109,6 +105,20 @@ function stepOne(drug_type, drugConfig, price)
 end
 
 function stepTwo(drugType, drugConfig) -- Animatie basically
+    ESX.TriggerServerCallback('esx_drugsProgression:getDrugsPercentage', function(percentage)
+        if drugType == 'coke' then
+            if percentage < Config.cokePercentage then
+                ESX.ShowNotification(_U('npcName')..'je hebt niet genoeg drugs % om dit te leren!')
+                return
+            end
+        elseif drugType == 'meth' then
+            if percentage < Config.methPercentage then
+                ESX.ShowNotification(_U('npcName')..'je hebt niet genoeg drugs % om dit te leren!')
+                return
+            end
+        end
+    end)
+    
     inStep = true
     ESX.TriggerServerCallback('esx_drugsProgression:playerHasItems', function(hasItems)
         for k,v in pairs(hasItems) do
@@ -230,7 +240,6 @@ function SetWaypoint(x, y, z, drug_type)
     if DoesBlipExist(blip) then
         RemoveBlip(blip)
     end
-
     blip = AddBlipForCoord(x, y, z)
 	SetBlipRoute(blip, true)
     AddTextEntry("BLIP_LOCATIE_DRUGS_LEREN", lang .. " Leren")

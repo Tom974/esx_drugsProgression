@@ -14,8 +14,9 @@ Config = {
         -- {x=487.55, y=5589.09, z=794.05, h=276.07, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="weed", stepNumber=2}, -- coke
         -- {x=501.45, y=5603.81, z=797.91, h=212.598420, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="weed", stepNumber=1}, -- meth
         -- {x=487.55, y=5589.09, z=794.05, h=276.07, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="weed", stepNumber=2}, -- meth
-        
     },
+    cokePercentage = 20, -- Minimaal drugs % dat je moet hebben voor coke
+    methPercentage = 25, -- Minimaal drugs % dat je moet hebben voor meth
     itemsToHave = { -- Items die je op zak moet hebben om een formule in te kunnen leveren
         weed = {
             {item="water", amount=1}
@@ -27,18 +28,18 @@ Config = {
             {item="water", amount=1}
         }
     },
-    displayDistance = 2.0,
-    drugsPrices = {
+    displayDistance = 2.0, -- minimale displaydistance totdat je menutje krijgt
+    drugsPrices = { -- Spreekt voor zich..
         weed = 20000,
         coke = 100000,
-        meth = 250000,
+        meth = 250000
     },
-    animations = {
+    animations = { -- Animaties die je gaat doen wanneer je een formule aan het craften bent
         weed = 'world_human_gardener_plant',
         coke = 'prop_human_bum_bin',
         meth = 'prop_human_bum_bin'
     },
-    lang = {
+    lang = { -- Kleine formatter die eigenlijk uit nl.lua (locale file) moet komen
         drug_type = {
             weed = "Wiet",
             coke = "Coke",
