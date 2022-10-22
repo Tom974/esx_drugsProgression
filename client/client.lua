@@ -1,22 +1,28 @@
 -- ESX.TriggerServerCallback('drugs_progression:getDrugsPercentage', function(percentage)
 --     print('percentage: ' .. percentage)
 -- end) -- Voor later nog misschien nodig
-
 ESX = nil
 local blip = nil
-local step_1_weed = nil
-local step_2_weed = nil
-local isDeliveringFormula = false
-local weed_learned = nil
-local coke_learned = nil
-local meth_learned = nil
+local inStep = false
+local infoArray = nil
+local isNearbyNPC = false
+local isAlreadyNearNPC = false
+
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
 CreateThread(function()
-    for _, v in pairs(Config.npcs) do
-        addNPC(v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8])
+    for k, v in pairs(Config.npcs) do
+        addNPC(v.x, v.y, v.z, v.h, v.modelHash, v.pedModel, v.pedAnimation)
     end
 end)
+
+-- Indien player ingeladen word
+-- RegisterNetEvent('esx:playerLoaded')
+-- AddEventHandler("esx:playerLoaded", function(xPlayer)
+--     ESX.PlayerData = xPlayer
+--     TriggerServerEvent("drugs_progression:insert_if_not_exists")
+--     Citizen.Wait(100)
+-- end)
 
 -- Tijdelijk ivm development en restarten van plugin/script
 AddEventHandler('onResourceStart', function(resourceName)
@@ -24,182 +30,173 @@ AddEventHandler('onResourceStart', function(resourceName)
         return -- Als de resource niet gelijk is aan de resource die je hier hebt, doe niks
     end
 
-
-    TriggerServerEvent("drugs_progression:insert_if_not_exists")
-    Citizen.Wait(100)
-    ESX.TriggerServerCallback('drugs_progression:getAlreadyLearned', function(identifier, value, done_step_1, done_step_2)
-        step_1_weed = done_step_1
-        step_2_weed = done_step_2
-        weed_learned = value
-        if step_1_weed == 1 and step_2_weed == 0 then
-            ESX.ShowNotification(_U('npcName')..' ~s~Ga naar de locatie op je gps!')
-            SetWaypoint(487.55, 5589.09, 794.05, 'weed')
+    print('insert')
+    TriggerServerEvent("esx_drugsProgression:insertIfNotExists")
+    print('done')
+    ESX.TriggerServerCallback('esx_drugsProgression:getAlreadyLearned', function(identifier, results)
+        print('callback done')
+        if results ~= nil then
+            infoArray = results
+            print('updated')
         end
-    end, 'weed')
+    end)
 end)
 
--- Indien player ingeladen word
-RegisterNetEvent('esx:playerLoaded')
-AddEventHandler("esx:playerLoaded", function(xPlayer)
-    ESX.PlayerData = xPlayer
-    TriggerServerEvent("drugs_progression:insert_if_not_exists")
-    Citizen.Wait(100)
-    ESX.TriggerServerCallback('drugs_progression:getAlreadyLearned', function(identifier, value, done_step_1, done_step_2)
-        step_1_weed = done_step_1
-        step_2_weed = done_step_2
-        weed_learned = value
-        if step_1_weed == 1 and step_2_weed == 0 then
-            ESX.ShowNotification(_U('npcName')..' ~s~Ga naar de locatie op je gps!')
-            SetWaypoint(487.55, 5589.09, 794.05, 'weed')
-        end
-    end, 'weed')
-end)
+-- Detect keypress
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(0)
+        -- print(isNearbyNPC, currentNPC, inStep)
+		if isNearbyNPC ~= false and currentNPC ~= nil then
+            if inStep == false then
+                local price = Config.drugsPrices[currentNPC.pedInfo]
+                local drugConfig = infoArray[currentNPC.pedInfo]
 
--- While loop waar ik zelf niet zo erg van hou, maar kan blijkbaar niet anders
-CreateThread(function()
-    while true do  
-        for _, v in pairs(Config.npcs) do
-            local distance = #(GetEntityCoords(PlayerPedId()) - vec3(v[1], v[2], v[3]))
-            if (distance < 2.0) then -- indien je dichtbij de npc bent
-                if v[7] == "learning_weed_1" then
-                    if tonumber(step_1_weed) == 0 then
-                        local price = Config.drugsPrices['weed']
-                        showInfobar('Druk op ~INPUT_PICKUP~ om wiet te leren (€'..formatNumber(price)..')')
-                        if IsControlJustReleased(0, 38) and IsPedInAnyVehicle(PlayerPedId(), true) == false then
-                            if weed_learned == 1 then
-                                ESX.ShowNotification(_U('npcName')..' ~s~Je hebt wiet al geleerd!')
-                            elseif weed_learned == 0 then
-                                if price ~= nil then
-                                    ESX.TriggerServerCallback('drugs_progression:removeAccountMoney', function(result)
-                                        if result == true then
-                                            ESX.ShowNotification(_U('npcName')..' ~s~Ga naar de locatie op je gps!')
-                                            SetWaypoint(487.55, 5589.09, 794.05, 'weed')
-                                            -- Hier zorgen dat de database ook geupdate word met done_step_1
-                                            TriggerServerEvent('drugs_progression:done_step', 'weed', '1')
-                                            step_1_weed = 1
-                                        elseif result == false then
-                                            ESX.ShowNotification(_U('npcName')..' ~s~Je hebt niet genoeg geld op zak!')
-                                        end
-                                    end, price)
-                                end
-                            end
-                        end
-                    else
-                        if IsControlJustReleased(0, 38) and IsPedInAnyVehicle(PlayerPedId(), true) == false then
-                            ESX.ShowNotification(_U('npcName')..' ~s~Je hebt mij al betaald voor wiet, maak eerst het leerproces af!')
+                if currentNPC.stepNumber == 1 then
+                    showInfobar('Druk op ~INPUT_PICKUP~ om '..currentNPC.pedInfo..' te leren (€'..price..')')
+                    if IsControlJustReleased(0, 38) and IsPedInAnyVehicle(PlayerPedId(), true) == false then -- (38 = E)
+                        stepOne(currentNPC.pedInfo, drugConfig, price)
+                    end
+                elseif currentNPC.stepNumber == 2 then
+                    if DoesBlipExist(blip) then
+                        RemoveBlip(blip)
+                    end
+                    showInfobar('Druk op ~INPUT_PICKUP~ om te praten met Mike')
+                    if IsControlJustReleased(0, 38) and IsPedInAnyVehicle(PlayerPedId(), true) == false then -- (38 = E)
+                        if drugConfig.stepTwo == 0 and drugConfig.stepOne == 1 then
+                            stepTwo(currentNPC.pedInfo, drugConfig)
+                        else 
+                            ESX.ShowNotification(_U('npcName')..'Ga eerst naar Trevor om te betalen!')
                         end
                     end
-                elseif v[7] == "learning_weed_2" then
-                    showInfobar(_U('npcName').."Druk ~c~[~g~E~c~]~s~")
-                    if step_2_weed == 0 and step_1_weed == 1 then
-                        if DoesBlipExist(blip) then
-                            RemoveBlip(blip)
-                        end
-                        if IsControlJustReleased(0, 38) and IsPedInAnyVehicle(PlayerPedId(), true) == false then
-                            ESX.ShowNotification(_U('npcName')..' ~s~Ik ga je leren hoe je moet plukken.')
-                            local amount = 100
-                            local keep_going = true
-                            for i=1, amount do
-                                if IsControlJustReleased(0, 73) then
-                                    ESX.ShowNotification(_U('npcName')..' ~s~Oke als je niet verder wilt gaan dan niet..')
-                                    -- Kan hier ook gewoon DisableControlAction(0, <keynumber>) doen om te zorgen dat je geen X kunt drukken
-                                    keep_going = false
-                                    break
-                                end
-                                Citizen.Wait(1)
-                            end
-                            
-                            if keep_going == true then
-                                ESX.ShowNotification(_U('npcName')..' ~s~Hier, neem een schep en begin met het wiet plantje uit de grond te halen.')
-                                TaskStartScenarioInPlace(PlayerPedId(), 'world_human_gardener_plant', 0, false)
-                                local amount = 2000
-                                local keep_going = true
-                                for i=1, amount do
-                                    if IsControlJustReleased(0, 73) then
-                                        ESX.ShowNotification(_U('npcName')..' ~s~Oke als je niet verder wilt gaan dan niet..')
-                                        -- Kan hier ook gewoon DisableControlAction(0, <keynumber>) doen om te zorgen dat je geen X kunt drukken
-                                        keep_going = false
-                                        break
-                                    end
-                                    Citizen.Wait(1)
-                                end
-                                if keep_going == true then
-                                    ClearPedTasks(PlayerPedId())
-                                    ESX.ShowNotification(_U('npcName')..' ~s~Goed zo, dat was het! Nu weet je hoe je wiet moet plukken!')
-                                    -- give weed formula item to user
-                                    -- TriggerServerEvent('drugs_progression:done_step', 'weed', '2')
-                                    TriggerServerEvent('drugs_progression:give_formula', 'weed')
-                                    TriggerServerEvent('drugs_progression:clearDrugType', 'weed')
-                                    weed_learned = 0
-                                    step_2_weed = 0
-                                    step_1_weed = 0
-                                end
-                            end
-                        end
-                    elseif step_1_weed == 0 then
-                        if IsControlJustReleased(0, 38) and IsPedInAnyVehicle(PlayerPedId(), true) == false then
-                            ESX.ShowNotification(_U('npcName')..' ~s~Ga eerst naar Trevor om te betalen!')
-                        end
-                    end
-                elseif v[7] == 'deliver_formula' then -- id buurt van aflevering npc
-                    if isDeliveringFormula == false then -- Check of je al een formule aan het leveren/craften bent
-                        ESX.showInfobar("Druk ~c~[~g~E~c~]~s~ om een formule in te leveren")
-                        if IsControlJustReleased(0, 38) and IsPedInAnyVehicle(PlayerPedId(), true) == false then
-                            ESX.TriggerServerCallback('drugs_progression:hasFormulaInInventory', function(formula)
-                                if formula ~= false then
-                                    ESX.ShowNotification(_U('npcName')..' ~s~Dankjewel! Je gaat nu de formule craften..')
-                                    -- TODO: verstuur deepweb bericht, eventueel kansberekening eromheen
-                                    -- TriggerServerEvent('drugs_progression:deepweb_message', formula)
-                                    -- TODO: Verstuur bericht naar politie, eventueel kansberekening eromheen
-                                    isDeliveringFormula = true
-                                    TaskStartScenarioInPlace(PlayerPedId(), 'PROP_HUMAN_BUM_BIN', 0, false)
-                                    FreezeEntityPosition(PlayerPedId(), true)
-                                    amount = 1500
-                                    local keep_going = true
-                                    for i=1, amount do
-                                        if IsControlJustReleased(0, 73) then
-                                            ESX.ShowNotification(_U('npcName')..' ~s~oke dan.. dan stop ik wel')
-                                            -- Kan hier ook gewoon DisableControlAction(0, <keynumber>) doen om te zorgen dat je geen X kunt drukken
-                                            ClearPedTasksImmediately(PlayerPedId())
-                                            FreezeEntityPosition(PlayerPedId(), false)
-                                            keep_going = false
-                                            isDeliveringFormula = false
-                                        end
-                                        if keep_going == true then
-                                            if i % 500 == 0 then
-                                                ESX.ShowNotification("Craften van formule: " .. i .. "/" .. amount)
-                                            end
-                                        else 
-                                            break -- ga uit de functie als je op x hebt gedrukt, we hoeven de loop dan niet af te maken
-                                        end
-                                        Citizen.Wait(1)
-                                    end
-                                    if keep_going == true then
-                                        ClearPedTasksImmediately(PlayerPedId())
-                                        FreezeEntityPosition(PlayerPedId(), false)
-                                        TriggerServerEvent('drugs_progression:remove_formula', formula)
-                                        TriggerServerEvent('clearDrugType', formula)
-                                        ESX.ShowNotification(_U('npcName')..' ~s~Je hebt de formule geleerd, success ermee')
-                                        -- TriggerServerEvent("drugs_progression:drugsLearned", 'weed') -- Dit zorgt ervoor dat je het hele proces maar 1x kan doen.
-                                        isDeliveringFormula = false
-                                        if formula == 'weed' then
-                                            weed_step_1 = 0
-                                            weed_step_2 = 0
-                                            weed_learned = 0
-                                        end -- later nog coke en meth toevoegen, maar zit nu een beetje met die variabelen hoe ik dit het beste dynamisch kan maken
-                                    end
-                                else
-                                    ESX.ShowNotification(_U('npcName')..' ~s~Je hebt geen formule bij je!')
-                                end
-                            end)
-
-                        end                       
+                elseif currentNPC.stepNumber == 3 then
+                    showInfobar('Druk op ~INPUT_PICKUP~ om een '.._U(currentNPC.pedInfo..'_translation')..' formule te craften')
+                    if IsControlJustReleased(0, 38) and IsPedInAnyVehicle(PlayerPedId(), true) == false then -- (38 = E)
+                        craftFormula(currentNPC.pedInfo, drugConfig)
                     end
                 end
             end
+		else
+			Citizen.Wait(1500)
+		end
+	end
+end)
+
+function stepOne(drug_type, drugConfig, price)
+    inStep = true
+    if drugConfig.learned == 1 then
+        ESX.ShowNotification(_U('npcName')..'Je hebt dit al geleerd!')
+    elseif drugConfig.learned == 0 then
+        if drugConfig.stepOne == 0 then
+            if price ~= nil then
+                ESX.TriggerServerCallback('esx_drugsProgression:removeAccountMoney', function(result)
+                    if result == true then
+                        ESX.ShowNotification(_U('npcName')..'Ga naar de locatie op je gps! Zorg dat je een pot en schep bij je hebt!')
+                        SetWaypoint(currentNPC.waypointX, currentNPC.waypointY, currentNPC.waypointZ, drug_type)
+                        -- Hier zorgen dat de database ook geupdate word met done_step_1
+                        TriggerServerEvent('esx_drugsProgression:doneStep', drug_type, 'stepOne')
+                        infoArray[drug_type].stepOne = 1
+                    elseif result == false then
+                        ESX.ShowNotification(_U('npcName')..'Je hebt niet genoeg geld op zak!')
+                    end
+                end, price)
+            end
+        else 
+            ESX.ShowNotification(_U('npcName').._U(drug_type..'already_paid'))
         end
-        Wait(1) -- Infinite supoer loop lag voorkomen
     end
+    inStep = false
+end
+
+function stepTwo(drugType, drugConfig) -- Animatie basically
+    inStep = true
+    ESX.TriggerServerCallback('esx_drugsProgression:playerHasItems', function(hasItems)
+        for k,v in pairs(hasItems) do
+            if v.hasItem == false then
+                ESX.ShowNotification(_U('npcName').._U('missingItems'))
+                return
+            end
+        end
+
+        DisableControlAction(0, 73) -- Zorgen dat je geen "X" kunt drukken
+        ESX.ShowNotification(_U('npcName').._U('foundIngredients'))
+        Citizen.Wait(1500)
+        
+        ESX.ShowNotification(_U('npcName')..'Hier, neem een schep en begin met het wiet plantje uit de grond te halen.')
+        local animation = Config.animations[drugType]
+        TaskStartScenarioInPlace(PlayerPedId(), animation, 0, false)
+        Citizen.SetTimeout(10000, function()
+            ClearPedTasks(PlayerPedId())
+            ESX.ShowNotification(_U('npcName').._U('doneStepTwo'))
+            Citizen.Wait(1500)
+            TriggerServerEvent('esx_drugsProgression:give_formula', drugType)
+            TriggerServerEvent('esx_drugsProgression:finishSteps', drugType)
+            infoArray[drugType].stepOne = 0
+            infoArray[drugType].stepTwo = 0
+            infoArray[drugType].learned = 0
+            EnableControlAction(0, 73)
+            ESX.ShowNotification(_U('npcName')..'Hier, neem deze formule en craft deze om bij Michael in de buurt van Paleto Bay')
+            Citizen.Wait(1500)
+        end)
+    end, Config.itemsToHave[drugType])
+    inStep = false
+end
+
+function craftFormula(drugType, drugConfig)
+    ESX.TriggerServerCallback('esx_drugsProgression:playerHasItems', function(hasItems)
+        for k,v in pairs(hasItems) do
+            if v.hasItem == false then
+                ESX.ShowNotification(_U('npcName')..'Je hebt de formule niet bij je!')
+                return
+            end
+        end
+
+        ESX.ShowNotification(_U('npcName')..'Dankjewel! Je gaat nu de formule craften..')
+        isDeliveringFormula = true
+        TaskStartScenarioInPlace(PlayerPedId(), 'PROP_HUMAN_BUM_BIN', 0, false)
+        DisableControlAction(0, 73) -- Zorgen dat je geen "X" kunt drukken
+        Citizen.SetTimeout(10000, function()
+            EnableControlAction(0, 73)
+            ClearPedTasksImmediately(PlayerPedId())
+            TriggerServerEvent('esx_drugsProgression:removeFormula', drugType)
+            ESX.ShowNotification(_U('npcName')..'Je hebt de formule geleerd, gefeliciteerd!')
+            isDeliveringFormula = false
+        end)
+    end, {{item=drugType..'_formula', amount=1}})
+end
+
+-- Display text near npc
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(0)
+        local isNearby = false
+        local minDistance = 1000 
+
+        for k, v in pairs(Config.npcs) do
+            local distance = #(GetEntityCoords(PlayerPedId()) - vec3(v.x, v.y, v.z))
+            if(distance < Config.displayDistance) then
+                isNearby = true
+            end
+
+            if isNearby and not isAlreadyNearNPC then
+                -- Update de current container waar je staat
+                isAlreadyNearNPC = true
+                isNearbyNPC = true
+                currentNPC = v
+            end
+
+            minDistance = math.min(distance, minDistance)
+        end
+
+        if minDistance > Config.displayDistance then
+            Citizen.Wait(10 * minDistance)
+        end
+
+        if not isNearby and isAlreadyNearNPC then
+            isAlreadyNearNPC = false
+            isNearbyNPC = false
+        end
+	end
 end)
 
 -- Functie om text linksboven weer te geven
@@ -216,15 +213,9 @@ function formatNumber(number)
 end
 
 -- NPC Toevoegen
-function addNPC(x, y, z, heading, hash, model, npc_type, animatie)
+function addNPC(x, y, z, heading, hash, model, animatie)
     RequestModel(GetHashKey(model))
-    while not HasModelLoaded(GetHashKey(model)) do
-        Wait(15)
-    end
     RequestAnimDict(animatie)
-    while not HasAnimDictLoaded(animatie) do
-        Wait(15)
-    end
     ped = CreatePed(4, hash, x, y, z - 1, 3374176, false, true)
     SetEntityHeading(ped, heading)
     FreezeEntityPosition(ped, true)
@@ -242,8 +233,8 @@ function SetWaypoint(x, y, z, drug_type)
 
     blip = AddBlipForCoord(x, y, z)
 	SetBlipRoute(blip, true)
-    AddTextEntry("BLIP_LOCATIE_DRUGS_LEREN_WEED", lang .. " Leren")
-	BeginTextCommandSetBlipName("BLIP_LOCATIE_DRUGS_LEREN_WEED")
+    AddTextEntry("BLIP_LOCATIE_DRUGS_LEREN", lang .. " Leren")
+	BeginTextCommandSetBlipName("BLIP_LOCATIE_DRUGS_LEREN")
 	EndTextCommandSetBlipName(blip)
     SetBlipRoute(blip, true)
 end
