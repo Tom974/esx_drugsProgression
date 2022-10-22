@@ -45,7 +45,7 @@ Citizen.CreateThread(function()
         local isNearby = false
         local minDistance = 1000 
         for k, v in pairs(Config.npcs) do
-            local distance = #(GetEntityCoords(PlayerPedId()) - vec3(v.x, v.y, v.z))
+            local distance = #(GetEntityCoords(PlayerPedId()) - vec3(v.x, v.y, v.z))      
             if(distance < Config.displayDistance) then
                 isNearby = true
             end
