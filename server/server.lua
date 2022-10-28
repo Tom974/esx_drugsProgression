@@ -36,9 +36,10 @@ end)
 
 ESX.RegisterServerCallback("esx_drugsProgression:playerHasItems", function(source, cb, itemsToCheck)
     local checkedItems = {}
+    local xPlayer = ESX.GetPlayerFromId(source)
     if itemsToCheck ~= nil then
         for _, v in pairs(itemsToCheck) do
-            if ESX.Player.getInventoryItem(v.item).count > 0 then
+            if xPlayer.getInventoryItem(v.item).count > 0 then
                 table.insert(checkedItems, {item=v.item, hasItem=true})
             else
                 table.insert(checkedItems, {item=v.item, hasItem=false})
@@ -58,8 +59,9 @@ ESX.RegisterServerCallback("esx_drugsProgression:getDrugsPercentage", function(s
 end)
 
 ESX.RegisterServerCallback("esx_drugsProgression:removeAccountMoney", function(source, cb, amount)
-    if tonumber(ESX.Player.getMoney()) >= tonumber(amount) then
-        ESX.Player.removeMoney(tonumber(amount))
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if tonumber(xPlayer.getMoney()) >= tonumber(amount) then
+        xPlayer.removeMoney(tonumber(amount))
         cb(true)
     else 
         cb(false)
@@ -113,5 +115,12 @@ end)
 
 RegisterServerEvent("esx_drugsProgression:removeFormula")
 AddEventHandler("esx_drugsProgression:removeFormula", function(drug_type)
-    ESX.Player.removeInventoryItem(drug_type..'_formula', 1)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    xPlayer.removeInventoryItem(drug_type..'_formula', 1)
 end)
+
+RegisterServerEvent("esx_drugsProgression:giveFormula")
+AddEventHandler("esx_drugsProgression:giveFormula", function(drug_type)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    xPlayer.addInventoryItem(drug_type..'_formula', 1)
+end)	

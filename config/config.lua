@@ -8,12 +8,11 @@ Config = {
         -- extra npc toevoegen
         {x=-14.22857, y=-700.4308, z=250.4, h=212.598420, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="coke", stepNumber=1, waypointX=487.55, waypointY=5589.09, waypointZ=794.05}, -- wiet
         {x=-18.3033, y=-692.4264, z=250.4, h=212.598420, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="coke", stepNumber=2}, -- wiet
-        {x=-8.610985, y=-697.8066, z=250.4, h=12.1, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="coke", stepNumber=3} -- eind-npc-wiet
-        
-        -- {x=501.45, y=5603.81, z=797.91, h=212.598420, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="weed", stepNumber=1}, -- coke
-        -- {x=487.55, y=5589.09, z=794.05, h=276.07, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="weed", stepNumber=2}, -- coke
-        -- {x=501.45, y=5603.81, z=797.91, h=212.598420, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="weed", stepNumber=1}, -- meth
-        -- {x=487.55, y=5589.09, z=794.05, h=276.07, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="weed", stepNumber=2}, -- meth
+        {x=-8.610985, y=-697.8066, z=250.4, h=12.1, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="coke", stepNumber=3}, -- eind-npc-wiet
+        -- meth npcs
+        {x=0.8043957, y=-693.4154, z=250.4, h=272.126, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="coke", stepNumber=1, waypointX=487.55, waypointY=5589.09, waypointZ=794.05}, -- wiet
+        {x=-3.151646, y=-685.2396, z=250.4, h=209.7638, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="coke", stepNumber=2}, -- wiet
+        {x=1.542857, y=-683.0901, z=250.4, h=325.9843, modelHash=0xC99F21C4, pedModel="a_m_y_business_01", pedAnimation="mini@strip_club@idles@bouncer@base", pedInfo="coke", stepNumber=3} -- eind-npc-wiet
     },
     cokePercentage = 20, -- Minimaal drugs % dat je moet hebben voor coke
     methPercentage = 25, -- Minimaal drugs % dat je moet hebben voor meth

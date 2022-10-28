@@ -71,6 +71,7 @@ end)
 
 -- Detect keypress near npc
 Citizen.CreateThread(function()
+    Citizen.Wait(1000)
 	while true do
 		Citizen.Wait(0)
 		if isNearbyNPC ~= false and currentNPC ~= nil then
@@ -128,26 +129,26 @@ function stepOne(drug_type, drugConfig, price)
                 end, price)
             end
         else 
-            ESX.ShowNotification(_U('npcName').._U(drug_type..'already_paid'))
+            ESX.ShowNotification(_U('npcName').._U(drug_type..'_already_paid'))
         end
     end
     inStep = false
 end
 
 function stepTwo(drugType, drugConfig) -- Animatie basically
-    ESX.TriggerServerCallback('esx_drugsProgression:getDrugsPercentage', function(percentage)
-        if drugType == 'coke' then
-            if percentage < Config.cokePercentage then
-                ESX.ShowNotification(_U('npcName')..'je hebt niet genoeg drugs % om dit te leren!')
-                return
-            end
-        elseif drugType == 'meth' then
-            if percentage < Config.methPercentage then
-                ESX.ShowNotification(_U('npcName')..'je hebt niet genoeg drugs % om dit te leren!')
-                return
-            end
-        end
-    end)
+    -- ESX.TriggerServerCallback('esx_drugsProgression:getDrugsPercentage', function(percentage)
+    --     if drugType == 'coke' then
+    --         if percentage < Config.cokePercentage then
+    --             ESX.ShowNotification(_U('npcName')..'je hebt niet genoeg drugs % om dit te leren!')
+    --             return
+    --         end
+    --     elseif drugType == 'meth' then
+    --         if percentage < Config.methPercentage then
+    --             ESX.ShowNotification(_U('npcName')..'je hebt niet genoeg drugs % om dit te leren!')
+    --             return
+    --         end
+    --     end
+    -- end)
     
     inStep = true
     ESX.TriggerServerCallback('esx_drugsProgression:playerHasItems', function(hasItems)
@@ -169,7 +170,7 @@ function stepTwo(drugType, drugConfig) -- Animatie basically
             ClearPedTasks(PlayerPedId())
             ESX.ShowNotification(_U('npcName').._U('doneStepTwo'))
             Citizen.Wait(1500)
-            TriggerServerEvent('esx_drugsProgression:give_formula', drugType)
+            TriggerServerEvent('esx_drugsProgression:giveFormula', drugType)
             TriggerServerEvent('esx_drugsProgression:finishSteps', drugType)
             infoArray[drugType].stepOne = 0
             infoArray[drugType].stepTwo = 0
